@@ -17,7 +17,7 @@ def connect_mqtt(client_id, username="", password="", broker="localhost", port=1
         print(f'Received message: `{str(message.payload)}`')
 
     # Set Connecting Client ID
-    client = mqtt.Client(client_id, userdata=None, protocol=mqtt.MQTTv5)
+    client = mqtt.Client(client_id, clean_session=False, userdata=None, protocol=mqtt.MQTTv31)
     client.username_pw_set(username, password)
     client.tls_set(tls_version=mqtt.ssl.PROTOCOL_TLS)
     client.on_connect = on_connect
