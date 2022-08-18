@@ -13,23 +13,25 @@ username = os.getenv('APP_USERNAME')
 password = os.getenv('APP_PASSWORD')
 client_id = f'{os.getenv("APP_NAME")}-pub'
 
-QUEUE=None
-
 def run(queue):
-    QUEUE=queue
+    client = mqtt.connect_mqtt(queue, client_id, username, password, broker, port)
+    client.loop_start()
     
-    # TODO: Testar se a fila enviada para o método connect_mqtt() é atualizada no contexto do módulo
-    mqtt.connect_mqtt(queue, client_id, username, password, broker, port)
-    readSensor()
+    while True:
+        try:
+            error = queue.get(timeout=5)
 
-    # client = mqtt.connect_mqtt(queue, client_id, username, password, broker, port)
-    # client.loop_start()
-    # mqtt.publish(topic, client, 1)
+            mqtt.publish(topic, error, client)
+        except Empty:
+            # Nenhum erro na fila...
+            pass
+        except:
+            print('Algo deu errado ao ler a fila de erros. Tente novamente mais tarde!')
 
-def readSensor():
+def readSensor(queue):
     while True:
         try: 
-            message = QUEUE.get()
+            message = queue.get(timeout=5)
             print(message)
         except Empty:
             print('Fila vazia')
