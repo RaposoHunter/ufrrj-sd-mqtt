@@ -1,5 +1,7 @@
 import os
+from queue import Empty, Queue
 from dotenv import load_dotenv
+from threading import Thread
 
 import config.mqtt as mqtt
 
@@ -12,10 +14,28 @@ username = os.getenv('APP_USERNAME')
 password = os.getenv('APP_PASSWORD')
 client_id = f'{os.getenv("APP_NAME")}-sub0'
 
-def run():
-    client = mqtt.connect_mqtt(client_id, username, password, broker, port)
+queue = Queue()
+
+def mqttClient():    
+    client = mqtt.connect_mqtt(queue, client_id, username, password, broker, port)
     client.loop_start()
     mqtt.subscribe(topic, client, 1)
 
+def readQueue():
+    while(True):
+        try:
+            message = queue.get(timeout=5)
+
+            print(message)
+        except Empty as e:
+            # Handle empty queue here
+            print('Fila vazia')
+        except Exception as e:
+            print('Erro na thread de ler fila')
+
 if __name__ == '__main__':
-    run()
+    mqttThread = Thread(target=mqttClient)
+    mqttThread.start()
+
+    readThread = Thread(target=readQueue)
+    readThread.start()

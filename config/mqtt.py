@@ -1,37 +1,44 @@
+from queue import Queue
 import time
 import os
 import json
 from paho.mqtt import client as mqtt
 
-def connect_mqtt(client_id, username="", password="", broker="localhost", port=1883, transport='tcp'):
-    def on_connect(client, userdata, flags, rc, properties=None):
-        if rc == 0:
-            print("Connected to MQTT Broker!")
-        else:
-            print("Failed to connect, return code %d\n", rc)
+QUEUE=None
 
-    def on_subscribe(client, userdata, mid, granted_qos, properties=None):
-        print(f'Subscribed: {str(mid)} {str(granted_qos)}')
+def connect_mqtt(queue: Queue, client_id, username="", password="", broker="localhost", port=1883, transport='tcp'):
+    QUEUE=queue
+    queue.put('Teste')
+    # def on_connect(client, userdata, flags, rc, properties=None):
+    #     if rc == 0:
+    #         print("Connected to MQTT Broker!")
+    #     else:
+    #         queue.put('Teste')
+    #         print("Failed to connect, return code %d\n", rc)
 
-    def on_message(client, userdata, message):
-        print(f'Received message: `{str(message.payload)}`')
+    # def on_subscribe(client, userdata, mid, granted_qos, properties=None):
+    #     print(f'Subscribed: {str(mid)} {str(granted_qos)}')
 
-    # Set Connecting Client ID
-    client = mqtt.Client(client_id, clean_session=False, userdata=None, protocol=mqtt.MQTTv31)
-    client.username_pw_set(username, password)
-    client.tls_set(tls_version=mqtt.ssl.PROTOCOL_TLS)
-    client.on_connect = on_connect
-    client.on_message = on_message
-    client.on_subscribe = on_subscribe
+    # def on_message(client, userdata, message):
+    #     print(f'Received message: `{str(message.payload)}`')
+    #     # queue.put(message.payload)
 
-    if(transport == 'websockets'):
-        client.ws_set_options('/mqtt', {
-            "port": 9001
-        })
+    # # Set Connecting Client ID
+    # client = mqtt.Client(client_id, clean_session=False, userdata=None, protocol=mqtt.MQTTv31)
+    # client.username_pw_set(username, password)
+    # client.tls_set(tls_version=mqtt.ssl.PROTOCOL_TLS)
+    # client.on_connect = on_connect
+    # client.on_message = on_message
+    # client.on_subscribe = on_subscribe
 
-    client.connect(broker, port)
+    # if(transport == 'websockets'):
+    #     client.ws_set_options('/mqtt', {
+    #         "port": 9001
+    #     })
+
+    # client.connect(broker, port)
     
-    return client
+    # return client
 
 def publish(topic, client, qos=1):
      msg_count = 0
