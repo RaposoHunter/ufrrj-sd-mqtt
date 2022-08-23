@@ -13,8 +13,8 @@ username = os.getenv('APP_USERNAME')
 password = os.getenv('APP_PASSWORD')
 client_id = f'{os.getenv("APP_NAME")}-pub'
 
-def run(queue):
-    client = mqtt.connect_mqtt(queue, client_id, username, password, broker, port)
+def run(queue: Queue):
+    client = mqtt.connect_mqtt(client_id, username, password, broker, port)
     client.loop_start()
     
     while True:
@@ -27,15 +27,6 @@ def run(queue):
             pass
         except:
             print('Algo deu errado ao ler a fila de erros. Tente novamente mais tarde!')
-
-def readSensor(queue):
-    while True:
-        try: 
-            message = queue.get(timeout=5)
-            print(message)
-        except Empty:
-            print('Fila vazia')
     
-
 if __name__ == '__main__':
     run()

@@ -4,7 +4,7 @@ import os
 import json
 from paho.mqtt import client as mqtt
 
-def connect_mqtt(queue: Queue, client_id, username="", password="", broker="localhost", port=1883, transport='tcp'):
+def connect_mqtt(client_id, username="", password="", broker="localhost", port=1883, transport='tcp'):
     def on_connect(client, userdata, flags, rc, properties=None):
         if rc == 0:
             print("Connected to MQTT Broker!")
@@ -26,16 +26,11 @@ def connect_mqtt(queue: Queue, client_id, username="", password="", broker="loca
     client.on_message = on_message
     client.on_subscribe = on_subscribe
 
-    if(transport == 'websockets'):
-        client.ws_set_options('/mqtt', {
-            "port": 9001
-        })
-
     client.connect(broker, port)
     
     return client
 
-def publish(topic, message, client, qos=1):
+def publish(topic, message, client: mqtt.Client, qos=1):
     result = client.publish(topic, message, qos)
 
     status = result[0]
