@@ -1,11 +1,16 @@
 import smbus 
 import time # Usado na manipulação dos ciclos de repetição
-import datetime # Usado para adquirir a hora atual do sistema
 import requests as request # Usado para fazer requisições HTTP
 import RPi.GPIO as GPIO # Usado para controlar os pinos I/O do RPi
 from ctypes import c_short, c_byte, c_ubyte
+from datetime import datetime # Usado para adquirir a hora atual do sistema
 from queue import Full, Queue
+from dotenv import load_dotenv
+from os import getenv
 
+load_dotenv()
+
+SERVER_URL = getenv('SERVER_URL', 'http://localhost:8000')
 DEVICE = 0x76 # Endereço padrão para dispositivos I2C
 
 bus = smbus.SMBus(1) # Rev 2 Pi, Pi 2 & Pi 3 uses bus 1
@@ -104,7 +109,7 @@ def readBME280All(addr=DEVICE):
   temp_raw = (data[3] << 12) | (data[4] << 4) | (data[5] >> 4)
   hum_raw = (data[6] << 8) | data[7]
 
-  #Refine temperature
+  # Refine temperature
   var1 = ((((temp_raw>>3)-(dig_T1<<1)))*(dig_T2)) >> 11
   var2 = (((((temp_raw>>4) - (dig_T1)) * ((temp_raw>>4) - (dig_T1))) >> 12) * (dig_T3)) >> 14
   t_fine = var1+var2
@@ -140,14 +145,14 @@ def readBME280All(addr=DEVICE):
 # Realiza a formatação das mensagens de erro
 def formatError(err):
     err['mensagem'] = " | ".join(err['mensagem']) # Junta todas as mensagens em uma string única separada por " | "
-    err['lido_em'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") # Recupera a data e hora em que a leitura foi realizada
+    err['lido_em'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S") # Recupera a data e hora em que a leitura foi realizada
 
     return err
 
 # Realiza uma requisição ao banco de dados para capturar os limites das medições estalecidos pelo supervisor
 def loadDataLimits():
     response = request.get(
-        'http://ip:port/mysql/limites'
+        f'{SERVER_URL}/mysql/limites'
     ).json()
 
     limits = {
@@ -158,25 +163,25 @@ def loadDataLimits():
     
     return limits
 
-# Realiza uma requisição que registra a ocorrência de um erro
-def postError(err):
-    response = request.post(
-        'http://ip:port/mysql/erros',
-        json=err
-    )
-   
-    return response
+# Registra a ocorrência de um erro na fila a ser publicada no broker MQTT
+def publishError(errors_queue: Queue, err):
+    try:
+        errors_queue.put(formatError(err))
+    except Full:
+        # TODO - Guardar o erro em um arquivo e enviar todos os erros deste arquivo para o banco de dados assim que uma requisição bem-sucedida ocorrer
+        pass
 
 # Realiza uma requisição que registra o resultado da média das leituras
 def postReadingAvarage(bmeData):
     response = request.post(
-        'http://ip:port/mysql',
+        f'{SERVER_URL}/mysql',
         json=bmeData
     )
     
     return response
 
-def main(readings_queue: Queue, errors_queue: Queue):
+# def main(readings_queue: Queue, errors_queue: Queue):
+def main(errors_queue: Queue):
 	# Dados de identificação do sensor
     (chip_id, chip_version) = readBME280ID()
     
@@ -257,15 +262,12 @@ def main(readings_queue: Queue, errors_queue: Queue):
             
 		# Caso exista um erro
         if(readingError):
-            try:
-                errors_queue.put(formatError(err))
-            except Full:
-                # TODO - Guardar o erro em um arquivo e enviar todos os erros deste arquivo para o banco de dados assim que uma requisição bem-sucedida ocorrer
-                pass
+            publishError(errors_queue, err)
             
 		# Contabilizando a leitura
         readings.append(reading) 
         
+        # TODO - Enviar leiturar para uma fila a ser processada por outra Thread
         if(len(readings) == max_readings_num):
             temperaturaMedia = 0
             umidadeMedia = 0
@@ -287,7 +289,7 @@ def main(readings_queue: Queue, errors_queue: Queue):
                 "temperatura": temperaturaMedia,
                 "umidade": umidadeMedia,
                 # "co2": co2Media,
-                "lido_em": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                "lido_em": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
             
 			# TODO - USAR FUNÇÕES ASSÍNCRONAS PARA EVITAR GARGALOS
@@ -298,7 +300,3 @@ def main(readings_queue: Queue, errors_queue: Queue):
             readings = []
         
         time.sleep(cycle_interval) # Espera X segundos até a próxima leitura
-
-if __name__=="__main__":
-   main()
-   

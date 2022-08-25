@@ -1,8 +1,7 @@
 import os
+import config.mqtt as mqtt
 from queue import Empty, Queue
 from dotenv import load_dotenv
-
-import config.mqtt as mqtt
 
 load_dotenv()
 
@@ -16,7 +15,7 @@ client_id = f'{os.getenv("APP_NAME")}-pub'
 def run(queue: Queue):
     client = mqtt.connect_mqtt(client_id, username, password, broker, port)
     client.loop_start()
-    
+
     while True:
         try:
             error = queue.get(timeout=5)
@@ -27,6 +26,3 @@ def run(queue: Queue):
             pass
         except:
             print('Algo deu errado ao ler a fila de erros. Tente novamente mais tarde!')
-    
-if __name__ == '__main__':
-    run()
