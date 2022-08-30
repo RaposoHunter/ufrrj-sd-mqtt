@@ -1,3 +1,4 @@
+import json
 import smbus 
 import time # Usado na manipulação dos ciclos de repetição
 import requests as request # Usado para fazer requisições HTTP
@@ -147,7 +148,7 @@ def formatError(err):
     err['mensagem'] = " | ".join(err['mensagem']) # Junta todas as mensagens em uma string única separada por " | "
     err['lido_em'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S") # Recupera a data e hora em que a leitura foi realizada
 
-    return err
+    return json.dumps(err)
 
 # Realiza uma requisição ao banco de dados para capturar os limites das medições estalecidos pelo supervisor
 def loadDataLimits():
@@ -248,7 +249,7 @@ def main(errors_queue: Queue):
                 else:
                     GPIO.output(equipments[key], GPIO.LOW) # 0
                     
-                err['mensagem'].append(f"O parâmetro '{key}' está acima do limite definido ({limits[key]['max']})! ")
+                err['mensagem'].append(f"O parametro '{key}' esta acima do limite definido ({limits[key]['max']})!")
                 
             elif(reading[key] < limits[key]['min']):
                 readingError = True
@@ -258,7 +259,7 @@ def main(errors_queue: Queue):
                 else:
                     GPIO.output(equipments[key], GPIO.HIGH)
                     
-                err['mensagem'].append(f"O parâmetro '{key}' está abaixo do limite definido ({limits[key]['min']})! ")
+                err['mensagem'].append(f"O parametro '{key}' esta abaixo do limite definido ({limits[key]['min']})!")
             
 		# Caso exista um erro
         if(readingError):

@@ -24,5 +24,5 @@ def run(queue: Queue):
         except Empty:
             # Nenhum erro na fila...
             pass
-        except:
+        except Exception as e:
             print('Algo deu errado ao ler a fila de erros. Tente novamente mais tarde!')

@@ -15,7 +15,6 @@ errors_queue = Queue(maxsize=10)
 publisher_queue = Queue(maxsize=10) # maxsize <= 0 === Infinite
 
 def main():
-    # sensor_thread = Thread(target=bme280.main, args=[readings_queue, errors_queue])
     sensor_thread = Thread(target=bme280.main, args=[errors_queue])
     sensor_thread.start()
 
