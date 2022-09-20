@@ -17,7 +17,7 @@ client_id = f'{os.getenv("APP_NAME")}-sub0'
 queue = Queue()
 
 def mqttClient():    
-    client = mqtt.connect_mqtt(queue, client_id, username, password, broker, port)
+    client = mqtt.connect_mqtt(client_id, username, password, broker, port)
     client.loop_start()
     mqtt.subscribe(topic, client, 1)
 

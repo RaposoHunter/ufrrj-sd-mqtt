@@ -28,6 +28,7 @@ def connect_mqtt(client_id, username="", password="", broker="localhost", port=1
 
     client.connect(broker, port)
     
+    
     return client
 
 def publish(topic, message, client: mqtt.Client, qos=1):
