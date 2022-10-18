@@ -1,4 +1,6 @@
+import config.mqtt as mqtt
 import json
+import os
 from random import random
 # import smbus 
 import time # Usado na manipulação dos ciclos de repetição
@@ -178,7 +180,6 @@ def loadDataLimits():
         }
     }
     
-    
     return limits
 
 # Registra a ocorrência de um erro na fila a ser publicada no broker MQTT
@@ -191,12 +192,27 @@ def publishError(errors_queue: Queue, err):
 
 # Realiza uma requisição que registra o resultado da média das leituras
 def postReadingAvarage(bmeData):
-    response = request.post(
-        f'{SERVER_URL}/mysql',
-        json=bmeData
-    )
+    broker = os.getenv('MQTT_HOSTNAME')
+    port = int(os.getenv('MQTT_PORT'))
+    topic = os.getenv('MQTT_TOPIC')
+    username = os.getenv('APP_USERNAME')
+    password = os.getenv('APP_PASSWORD')
+    client_id = f'{os.getenv("APP_NAME")}-pub'
+
+    client = mqtt.connect_mqtt(client_id, username, password, broker, port)
+    client.loop_start()
+
+    mqtt.publish('mqtt/leituras', json.dumps(bmeData), client)
+    client.disconnect()
     
-    return response
+    # response = request.post(
+    #     f'{SERVER_URL}/mysql',
+    #     json=bmeData
+    # )
+
+    # return response
+
+    
 
 # def main(readings_queue: Queue, errors_queue: Queue):
 def main(errors_queue: Queue):
@@ -213,7 +229,7 @@ def main(errors_queue: Queue):
     EXAUSTORES = 22 # Pino ligado aos exaustores
     
     cycle_interval = 60 # X segundos entre cada leitura
-    max_readings_num = 10 # Y leituras antes do envio dos dados
+    max_readings_num = 1 # Y leituras antes do envio dos dados
     readings = [] # Guarda até Y leituras e é resetado a cada X*Y/6 minutos
     
     # GPIO.setmode(GPIO.BCM) # Indica para o módulo que será usada a numeração no padrão BCM
