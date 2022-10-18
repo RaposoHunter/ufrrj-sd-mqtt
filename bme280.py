@@ -146,6 +146,15 @@ DEVICE = 0x76 # Endereço padrão para dispositivos I2C
 
 #   return temperature/100.0,pressure/100.0,humidity
 
+broker = os.getenv('MQTT_HOSTNAME')
+port = int(os.getenv('MQTT_PORT'))
+username = os.getenv('APP_USERNAME')
+password = os.getenv('APP_PASSWORD')
+client_id = f'{os.getenv("APP_NAME")}-readings-pub'
+
+client = mqtt.connect_mqtt(client_id, username, password, broker, port)
+client.loop_start()
+
 # Realiza a formatação das mensagens de erro
 def formatError(err):
     err['mensagem'] = " | ".join(err['mensagem']) # Junta todas as mensagens em uma string única separada por " | "
@@ -192,19 +201,8 @@ def publishError(errors_queue: Queue, err):
 
 # Realiza uma requisição que registra o resultado da média das leituras
 def postReadingAvarage(bmeData):
-    broker = os.getenv('MQTT_HOSTNAME')
-    port = int(os.getenv('MQTT_PORT'))
-    topic = os.getenv('MQTT_TOPIC')
-    username = os.getenv('APP_USERNAME')
-    password = os.getenv('APP_PASSWORD')
-    client_id = f'{os.getenv("APP_NAME")}-pub'
-
-    client = mqtt.connect_mqtt(client_id, username, password, broker, port)
-    client.loop_start()
-
     mqtt.publish('mqtt/leituras', json.dumps(bmeData), client)
-    client.disconnect()
-    
+
     # response = request.post(
     #     f'{SERVER_URL}/mysql',
     #     json=bmeData
